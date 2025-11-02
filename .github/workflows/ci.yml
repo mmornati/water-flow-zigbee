@@ -24,13 +24,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install PyYAML
+      - name: Install PlatformIO and dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyyaml
-
-      - name: Install PlatformIO Core
-        uses: platformio/action-install-platformio@v1
+          pip install platformio pyyaml
 
       - name: Cache PlatformIO
         uses: actions/cache@v4
@@ -84,13 +81,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install PyYAML
+      - name: Install PlatformIO and dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyyaml
-
-      - name: Install PlatformIO Core
-        uses: platformio/action-install-platformio@v1
+          pip install platformio pyyaml
 
       - name: Cache PlatformIO
         uses: actions/cache@v4
