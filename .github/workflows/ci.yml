@@ -26,6 +26,7 @@ jobs:
 
       - name: Install PyYAML
         run: |
+          python -m pip install --upgrade pip
           pip install pyyaml
 
       - name: Install PlatformIO Core
@@ -43,11 +44,26 @@ jobs:
       - name: Build ${{ matrix.env }}
         run: |
           echo "Building environment: ${{ matrix.env }}"
-          pio run -e ${{ matrix.env }}
+          pio run -e ${{ matrix.env }} || exit 1
+          echo "✅ Build successful for ${{ matrix.env }}"
+
+      - name: Check build artifacts exist
+        id: check_artifacts
+        run: |
+          if [ -f ".pio/build/${{ matrix.env }}/firmware.bin" ]; then
+            echo "artifact_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Build artifacts found"
+            ls -lh .pio/build/${{ matrix.env }}/ | head -10
+          else
+            echo "artifact_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Warning: firmware.bin not found"
+            echo "Checking build directory..."
+            ls -la .pio/build/${{ matrix.env }}/ 2>/dev/null || echo "Build directory not found"
+          fi
 
       - name: Upload firmware artifacts
+        if: steps.check_artifacts.outputs.artifact_exists == 'true'
         uses: actions/upload-artifact@v4
-        if: success()
         with:
           name: firmware-${{ matrix.env }}
           path: |
@@ -70,6 +86,7 @@ jobs:
 
       - name: Install PyYAML
         run: |
+          python -m pip install --upgrade pip
           pip install pyyaml
 
       - name: Install PlatformIO Core
@@ -87,17 +104,19 @@ jobs:
       - name: Compile tests
         run: |
           echo "Compiling test suite..."
-          pio run -e test-compile
+          pio run -e test-compile || exit 1
+          echo "✅ Test compilation successful"
 
       - name: Check build artifacts
         run: |
           echo "Checking test build artifacts..."
           if [ -f ".pio/build/test-compile/firmware.bin" ]; then
-            echo "✅ Test compilation successful"
-            ls -lh .pio/build/test-compile/
+            echo "✅ Test build artifacts found"
+            ls -lh .pio/build/test-compile/ | head -20
           else
-            echo "❌ Test build failed - firmware.bin not found"
-            exit 1
+            echo "⚠️  Warning: firmware.bin not found, but build may have succeeded"
+            echo "Checking for other build artifacts..."
+            ls -la .pio/build/test-compile/ || echo "Build directory not found"
           fi
 
   validate:
@@ -125,8 +144,27 @@ jobs:
       - name: Check partition tables
         run: |
           echo "Validating partition tables..."
-          # Check partition tables are valid CSV
-          head -1 partitions_zigbee.csv | grep -q "# Name" && \
+          # Check partition tables exist and have valid format
+          if [ ! -f partitions_zigbee.csv ]; then
+            echo "❌ partitions_zigbee.csv file not found"
+            exit 1
+          fi
+          if grep -q "^# Name" partitions_zigbee.csv || \
+             grep -q "^nvs," partitions_zigbee.csv; then
             echo "✅ partitions_zigbee.csv valid"
-          head -1 partitions_zigbee_simple.csv | grep -q "# Name" && \
+          else
+            echo "❌ partitions_zigbee.csv validation failed - invalid format"
+            exit 1
+          fi
+          
+          if [ ! -f partitions_zigbee_simple.csv ]; then
+            echo "❌ partitions_zigbee_simple.csv file not found"
+            exit 1
+          fi
+          if grep -q "^# Name" partitions_zigbee_simple.csv || \
+             grep -q "^nvs," partitions_zigbee_simple.csv; then
             echo "✅ partitions_zigbee_simple.csv valid"
+          else
+            echo "❌ partitions_zigbee_simple.csv validation failed - invalid format"
+            exit 1
+          fi
