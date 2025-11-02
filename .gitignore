@@ -1,0 +1,81 @@
+# PlatformIO
+.pio/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Arduino IDE
+*.hex
+*.eep
+*.elf
+*.bin
+*.ino.bak
+*.ino.elf
+*.ino.bin
+*.ino.hex
+*.ino.eep
+build/
+.settings/
+*.tmp
+
+# ESP32 specific
+*.pioenvs/
+*.piolibdeps/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Environment variables
+.env
+.env.local
+
+# Test outputs
+test_results/
+*.test
+
+# Calibration data
+calibration_data.txt
+test_results.txt
+
+# PlatformIO build files
+.pio/
+.vscode/
+*.pioenvs/
+*.piolibdeps/
+
+# Personal notes
+TODO.md
+NOTES.md
+notes.md

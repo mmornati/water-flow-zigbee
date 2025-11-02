@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  build:
+    name: Build Firmware
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        env: [xiao_esp32c6, dev, release, simple]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: |
+          pip install pyyaml
+
+      - name: Install PlatformIO Core
+        uses: platformio/action-install-platformio@v1
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Build ${{ matrix.env }}
+        run: |
+          echo "Building environment: ${{ matrix.env }}"
+          pio run -e ${{ matrix.env }}
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: firmware-${{ matrix.env }}
+          path: |
+            .pio/build/${{ matrix.env }}/firmware.bin
+            .pio/build/${{ matrix.env }}/firmware.elf
+          retention-days: 7
+
+  test:
+    name: Compile Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: |
+          pip install pyyaml
+
+      - name: Install PlatformIO Core
+        uses: platformio/action-install-platformio@v1
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Compile tests
+        run: |
+          echo "Compiling test suite..."
+          pio run -e test-compile
+
+      - name: Check build artifacts
+        run: |
+          echo "Checking test build artifacts..."
+          if [ -f ".pio/build/test-compile/firmware.bin" ]; then
+            echo "✅ Test compilation successful"
+            ls -lh .pio/build/test-compile/
+          else
+            echo "❌ Test build failed - firmware.bin not found"
+            exit 1
+          fi
+
+  validate:
+    name: Code Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check file structure
+        run: |
+          echo "Validating project structure..."
+          # Check required files exist
+          test -f platformio.ini || (echo "❌ platformio.ini missing" && exit 1)
+          test -f src/main.cpp || (echo "❌ src/main.cpp missing" && exit 1)
+          test -f include/config.h || (echo "❌ include/config.h missing" && exit 1)
+          test -f partitions_zigbee.csv || \
+            (echo "❌ partitions_zigbee.csv missing" && exit 1)
+          test -f partitions_zigbee_simple.csv || \
+            (echo "❌ partitions_zigbee_simple.csv missing" && exit 1)
+          test -d test || (echo "❌ test/ directory missing" && exit 1)
+          echo "✅ Project structure valid"
+
+      - name: Check partition tables
+        run: |
+          echo "Validating partition tables..."
+          # Check partition tables are valid CSV
+          head -1 partitions_zigbee.csv | grep -q "# Name" && \
+            echo "✅ partitions_zigbee.csv valid"
+          head -1 partitions_zigbee_simple.csv | grep -q "# Name" && \
+            echo "✅ partitions_zigbee_simple.csv valid"

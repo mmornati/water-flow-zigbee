@@ -1,0 +1,18 @@
+# ESP32 Partition Table for Zigbee (Simple - No OTA)
+# XIAO ESP32C6 has 4MB (0x400000) flash memory
+# 
+# Simplified partition layout for Zigbee devices without OTA:
+# - nvs: Non-volatile storage (Zigbee network data)
+# - app: Single application partition (no OTA)
+# - spiffs: SPIFFS filesystem (for preferences/EEPROM data)
+# - zb_storage: Zigbee NVRAM storage (required for Zigbee stack)
+# - zb_fct: Zigbee factory partition (required for Zigbee)
+#
+# Name,     Type, SubType, Offset,  Size,     Flags
+nvs,        data, nvs,     0x9000,  0x5000,
+app,        app,  factory, 0x10000, 0x2E0000,
+spiffs,     data, spiffs,  0x2F0000,0x0FB000,
+zb_storage, data, fat,     0x3EB000,0x4000,
+zb_fct,     data, fat,     0x3EF000,0x1000,
+coredump,   data, coredump,0x3F0000,0x10000,
+
